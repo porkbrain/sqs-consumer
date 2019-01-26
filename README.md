@@ -35,7 +35,7 @@ Message body is transformed via provided transform function
 into a generic type `T`. For example, if your messages carry user information, you
 can do following:
 
-```javascript
+```typescript
 export default (body: string) : User => {
     const { name, email } : any = JSON.parse(body)
 
@@ -50,7 +50,7 @@ in queue.
 It could be useful to transform the body into an object. You can use
 `any` type or, preferably, create an interface and export the interface.
 
-```javascript
+```typescript
 // Action.ts
 export interface Action {
     name: string
@@ -107,7 +107,7 @@ On `class ConsumerException`, there is one public method: `unwrap () : Error`.
 This gives you an instance of `Error` that is responsible for the exception.
 
 ### Example
-```javascript
+```typescript
 /**
  * Creates new sqs consumer with configuration that
  * is just an extended AWS.SQS.Types.ReceiveMessageRequest object
