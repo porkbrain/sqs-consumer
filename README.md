@@ -1,12 +1,12 @@
 # AWS SQS Consumer
 
-**Description**:  Polls the Amazon Web Services Simple Queue Service and dispatches messages to the listeners.
-Messages handy functions, such as `delete` or `changeVisibility`, and the body is transformed by a transformer
+Polls the Amazon Web Services Simple Queue Service and dispatches messages to the listeners.
+Messages have handy functions, such as `delete` or `changeVisibility`, and the body is transformed by a transformer
 function.
 
 ## Dependencies
 
-This package was meant to be used along with Typescript. The only production dependency is the AWS SDK. 
+This package was meant to be used along with Typescript. The only production dependency is the AWS SDK.
 
 ## Installation
 
@@ -29,15 +29,13 @@ And set the correct region either in env variables or in your codebase:
 
 ## Usage
 
-The consumer emits `QueueMessage` instances to listeners.
-Its body has been transformed via provided transform function
-into type `T`.
-
 ### Transformer
-For example, if your messages carry user information, you
+The consumer emits `QueueMessage` instances to listeners.
+Message body is transformed via provided transform function
+into a generic type `T`. For example, if your messages carry user information, you
 can do following:
 
-```
+```javascript
 export default (body: string) : User => {
     const { name, email } : any = JSON.parse(body)
 
@@ -52,7 +50,7 @@ in queue.
 It could be useful to transform the body into an object. You can use
 `any` type or, preferably, create an interface and export the interface.
 
-```
+```javascript
 // Action.ts
 export interface Action {
     name: string
@@ -109,7 +107,7 @@ On `class ConsumerException`, there is one public method: `unwrap () : Error`.
 This gives you an instance of `Error` that is responsible for the exception.
 
 ### Example
-```
+```javascript
 /**
  * Creates new sqs consumer with configuration that
  * is just an extended AWS.SQS.Types.ReceiveMessageRequest object
