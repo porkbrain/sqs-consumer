@@ -48,7 +48,7 @@ an error is emitted to error listeners and messages is left
 in queue.
 
 It could be useful to transform the body into an object. You can use
-`any` type or, preferably, create an interface and export the interface.
+`any` type or, preferably, create an interface and export it.
 
 ```typescript
 // Action.ts
@@ -73,7 +73,7 @@ export default (body: string) : Action {
 }
 
 // main.ts
-// Your app would be initialized like so:
+// Your app would be constructed like so:
 const app: QueueConsumer<Action> = new QueueConsumer(sqs, config, transformer)
 ```
 
@@ -83,40 +83,44 @@ interface. Documentation can be found [here](https://docs.aws.amazon.com/AWSJava
 **Parameters** section.
 You can find it also in the AWS Github repo [here](https://github.com/aws/aws-sdk-js/blob/master/apis/sqs-2012-11-05.normal.json) or [here](https://github.com/aws/aws-sdk-js/blob/master/clients/sqs.d.ts) (search for `ReceiveMessageRequest`).
 
-On top of these parameters, this library adds `Interval?: number`. This has to be set for continious polling.
+On top of these parameters, this library adds `Interval?: number`. This has to be set for continuous polling.
 
 ### Listeners
 There are two groups of listeners you can make use of: `QueueMessage`, `ConsumerException`. To add listeners to the app,
-you have to init new instance of the consumer and use following API:
+you have to construct new instance of the consumer and use following API:
 
+#### Message
 `app.onMessage.addListener(message => handler(message))`
 
-Where message is of type `QueueMessage` and has property `body` of type that you specified on
-init (for example mentioned above, it would `body: Action`).
+Where `message: QueueMessage` has property `body` of type that you specified on
+construct (for example mentioned above, it would `body: Action`).
 
-To listen to errors, you add a listener `(error: ConsumerException) => void`:
+#### Error
+To listen to errors, add a listener `(error: ConsumerException) => void`
 
 `app.onError.addListener(error => handler(error))`
 
-There are 3 types of error reported, all of which `extends ConsumerException`:
-- from connecting to SQS, corresponds to `class ConnectionException`
-- transforming messages, corresponds to `class TransformerException`
-- handling messages, corresponds to `class ListenerException`
+There are 3 types of error reported, all of which `extends ConsumerException`
+- error from connecting to SQS corresponds to `class ConnectionException`
+- error when transforming messages corresponds to `class TransformerException`
+- error when handling messages corresponds to `class ListenerException`
 
 On `class ConsumerException`, there is one public method: `unwrap () : Error`.
-This gives you an instance of `Error` that is responsible for the exception.
+This gives you an instance of `Error` that is responsible for that particular exception.
 
 ### Example
+Working with our `Action` interface example, we could bootstrap the app like so
+
 ```typescript
 /**
  * Creates new sqs consumer with configuration that
  * is just an extended AWS.SQS.Types.ReceiveMessageRequest object
  * and tranform function that assigns type of T as message body.
  *
- * @var {QueueConsumer<T>}
+ * @var {QueueConsumer<Action>}
  */
 
-const app: QueueConsumer<T> = new QueueConsumer(
+const app: QueueConsumer<Action> = new QueueConsumer(
   new AWS.SQS(),
   config,
   transform
@@ -124,7 +128,7 @@ const app: QueueConsumer<T> = new QueueConsumer(
 
 /**
  * Message handler of type
- * (message: QueueMessage<T>) => void
+ * (message: QueueMessage<Action>) => void
  */
 
 app.onMessage.addListener(m => flow(m))
@@ -171,7 +175,6 @@ you can often refer to the official documentation, as under the hood these metho
 ## Open source licensing info
 
 1. [LICENSE](LICENSE)
-2. [CFPB Source Code Policy](https://github.com/cfpb/source-code-policy/)
 
 
 ----
