@@ -36,7 +36,7 @@ export class QueueConsumer<T> {
   constructor (
     private sqs: AWS.SQS,
     private request: QueueConsumerConfig,
-    private transformer: (body: string) => T
+    private transformer: (body: string) => T,
   ) {
     //
   }
@@ -88,8 +88,8 @@ export class QueueConsumer<T> {
    *
    * @return {Promise<QueueMessage[]>}
    */
-  private async poll () : Promise<QueueMessage<T>[]> {
-    const { Messages } = await this.sqs
+  private async poll () : Promise<Array<QueueMessage<T>>> {
+    const { Messages }: AWS.SQS.ReceiveMessageResult = await this.sqs
       .receiveMessage(this.request)
       .promise()
 
