@@ -5,7 +5,7 @@ import { QueueConsumerConfig } from './QueueConsumerConfig'
 import {
   ConsumerException,
   ConnectionException,
-  TransformerException,
+  TransformException,
   ListenerException,
 } from './exceptions'
 
@@ -51,7 +51,7 @@ export class QueueConsumer<T> {
    * Starts polling in interval.
    */
   public run () : void {
-    if (typeof this.request.Interval !== 'number') {
+    if (this.request.Interval === undefined) {
       throw new Error(`
         Polling interval missings. Specify it in the
         QueueConsumerConfig object using property Interval: number.
@@ -102,6 +102,7 @@ export class QueueConsumer<T> {
    * @return {Promise<QueueMessage[]>}
    */
   private async poll () : Promise<Array<QueueMessage<T>>> {
+    console.log('sqs', this.sqs)
     const { Messages }: AWS.SQS.ReceiveMessageResult = await this.sqs
       .receiveMessage(this.request)
       .promise()
@@ -120,7 +121,7 @@ export class QueueConsumer<T> {
 
         return new QueueMessage<T>(this.sqs, this.request.QueueUrl, body, raw)
       } catch (error) {
-        this.onError.dispatch(new TransformerException(error))
+        this.onError.dispatch(new TransformException(error))
 
         return null
       }

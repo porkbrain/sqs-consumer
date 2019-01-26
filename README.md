@@ -102,7 +102,7 @@ To listen to errors, add a listener `(error: ConsumerException) => void`
 
 There are 3 types of error reported, all of which `extends ConsumerException`
 - error from connecting to SQS corresponds to `class ConnectionException`
-- error when transforming messages corresponds to `class TransformerException`
+- error when transforming messages corresponds to `class TransformException`
 - error when handling messages corresponds to `class ListenerException`
 
 On `class ConsumerException`, there is one public method: `unwrap () : Error`.

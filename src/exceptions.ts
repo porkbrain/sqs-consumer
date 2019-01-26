@@ -22,7 +22,7 @@ export class ConnectionException extends ConsumerException {
   //
 }
 
-export class TransformerException extends ConsumerException {
+export class TransformException extends ConsumerException {
   //
 }
 

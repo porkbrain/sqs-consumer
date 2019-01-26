@@ -4,7 +4,7 @@ import {
   ConnectionException,
   ConsumerException,
   ListenerException,
-  TransformerException,
+  TransformException,
 } from '../../src'
 
 describe('Exceptions', () => {
@@ -14,7 +14,7 @@ describe('Exceptions', () => {
 
     expect(ConnectionException.prototype).to.be.instanceOf(ConsumerException)
     expect(ListenerException.prototype).to.be.instanceOf(ConsumerException)
-    expect(TransformerException.prototype).to.be.instanceOf(ConsumerException)
+    expect(TransformException.prototype).to.be.instanceOf(ConsumerException)
   })
 
   it('takes error in constructor and unwraps it', () => {
