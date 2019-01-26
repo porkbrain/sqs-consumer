@@ -3,7 +3,14 @@ import * as AWS from 'aws-sdk'
 import * as sinon from 'sinon'
 
 import { ListenerBag } from '../../src/ListenerBag'
-import { QueueConsumer, QueueConsumerConfig, QueueMessage, ConnectionException, ListenerException, TransformException } from '../../src'
+import {
+  ConnectionException,
+  ListenerException,
+  QueueConsumer,
+  QueueConsumerConfig,
+  QueueMessage,
+  TransformException,
+} from '../../src'
 
 describe('QueueConsumer', () => {
   const sqs: AWS.SQS = new AWS.SQS()
@@ -87,6 +94,8 @@ describe('QueueConsumer', () => {
 
     app.run()
 
+    expect(app.isPolling()).to.be.ok
+
     await new Promise(r => setTimeout(r, 20))
 
     const callCount: number = stub.callCount
@@ -94,6 +103,8 @@ describe('QueueConsumer', () => {
     expect(callCount).to.be.greaterThan(1)
 
     app.stop()
+
+    expect(app.isPolling()).to.be.false
 
     await new Promise(r => setTimeout(r, 20))
 
@@ -171,7 +182,6 @@ describe('QueueConsumer', () => {
 
     app.onError.addListener(e => {
       try {
-        console.log(e)
         expect(e).to.be.an.instanceOf(TransformException)
         expect(e.unwrap().message).to.be.equal('message')
 
@@ -188,6 +198,26 @@ describe('QueueConsumer', () => {
     app.runOnce()
 
     sinon.stub((app as any), 'transformer').restore()
+  })
+
+  it('handles empty queue as empty array', async () => {
+    ;(sqs.receiveMessage as sinon.SinonStub)
+      .withArgs(config)
+      .returns({
+        promise: () => Promise.resolve({})
+      })
+
+    const spy: sinon.SinonSpy = sinon.spy()
+
+    app.onMessage.addListener(_ => spy)
+
+    app.onError.addListener(_ => spy)
+
+    app.runOnce()
+
+    await new Promise(r => setTimeout(r, 30))
+
+    expect(spy.notCalled).to.be.ok
   })
 
 })
