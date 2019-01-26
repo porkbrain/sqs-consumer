@@ -6,8 +6,8 @@ import {
   ConsumerException,
   ConnectionException,
   TransformerException,
-  ListenerException
-} from './errors'
+  ListenerException,
+} from './exceptions'
 
 export class QueueConsumer<T> {
 

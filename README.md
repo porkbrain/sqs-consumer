@@ -176,7 +176,6 @@ you can often refer to the official documentation, as under the hood these metho
 
 1. [LICENSE](LICENSE)
 
-
 ----
 
 ## Credits and references
