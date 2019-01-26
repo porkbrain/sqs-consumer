@@ -1,7 +1,7 @@
 {
   "name": "@bausano/sqs-consumer",
   "version": "1.0.0",
-  "description": "",
+  "description": "Polls AWS Simple Queue Service and dispatches the messages to listeners.",
   "scripts": {
     "build": "tslint -p tsconfig.json -c ./tslint.json && tsc",
     "test": "mocha test/setup.ts test/**/*.spec.ts -r ts-node/register -r tsconfig-paths/register",

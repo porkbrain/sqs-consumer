@@ -6,7 +6,7 @@ function.
 
 ## Dependencies
 
-This package was meant to be used along with Typescript. The only production dependency is the AWS NodeJS SDK. 
+This package was meant to be used along with Typescript. The only production dependency is the AWS SDK. 
 
 ## Installation
 
@@ -14,7 +14,14 @@ This package was meant to be used along with Typescript. The only production dep
 
 ## Configuration
 
-If the software is configurable, describe it in detail, either here or in other documentation to which you link.
+Since this package is built on top of the AWS SDK, the correct access tokens and regions have to be
+set in the node enviroment variables.
+Please refer to [this guide](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/configuring-the-jssdk.html)
+for further instructions on how to configure the service.
+
+When constructing the `SQS` object for consumer, lock the version of the APIS:
+
+`const sqs: AWS.SQS = new AWS.SQS({ apiVersion: '2012-11-05' })`
 
 ## Usage
 
