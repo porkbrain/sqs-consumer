@@ -2,6 +2,12 @@ import * as AWS from 'aws-sdk'
 import { ListenerBag } from './ListenerBag'
 import { QueueMessage } from './QueueMessage'
 import { QueueConsumerConfig } from './QueueConsumerConfig'
+import {
+  ConsumerException,
+  ConnectionException,
+  TransformerException,
+  ListenerException
+} from './errors'
 
 export class QueueConsumer<T> {
 
@@ -15,9 +21,9 @@ export class QueueConsumer<T> {
   /**
    * Listener bag to publish errors to.
    *
-   * @var {ListenerBag<Error>}
+   * @var {ListenerBag<ConsumerException>}
    */
-  public onError: ListenerBag<Error> = new ListenerBag()
+  public onError: ListenerBag<ConsumerException> = new ListenerBag()
 
   /**
    * Interval id that polls the queue.
@@ -61,7 +67,14 @@ export class QueueConsumer<T> {
    */
   public runOnce () : void {
     this.poll()
-      .then(messages => messages.forEach(m => this.onMessage.dispatch(m)))
+      .then(messages => messages.forEach((message) => {
+        try {
+          this.onMessage.dispatch(message)
+        } catch (error) {
+          // If a listener fails, it should not affect the others.
+          this.onError.dispatch(new ListenerException(error))
+        }
+      }))
       .catch(e => this.onError.dispatch(e))
   }
 
@@ -92,6 +105,7 @@ export class QueueConsumer<T> {
     const { Messages }: AWS.SQS.ReceiveMessageResult = await this.sqs
       .receiveMessage(this.request)
       .promise()
+      .catch(e => Promise.reject(new ConnectionException(e)))
 
     if (!Array.isArray(Messages)) {
       return []
@@ -106,7 +120,7 @@ export class QueueConsumer<T> {
 
         return new QueueMessage<T>(this.sqs, this.request.QueueUrl, body, raw)
       } catch (error) {
-        this.onError.dispatch(error)
+        this.onError.dispatch(new TransformerException(error))
 
         return null
       }

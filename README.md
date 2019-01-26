@@ -23,49 +23,161 @@ When constructing the `SQS` object for consumer, lock the version of the APIS:
 
 `const sqs: AWS.SQS = new AWS.SQS({ apiVersion: '2012-11-05' })`
 
+And set the correct region either in env variables or in your codebase:
+
+`AWS.config.update({ region: '...' })`
+
 ## Usage
 
-Show users how to use the software.
-Be specific.
-Use appropriate formatting when showing code snippets.
+The consumer emits `QueueMessage` instances to listeners.
+Its body has been transformed via provided transform function
+into type `T`.
 
-## How to test the software
+### Transformer
+For example, if your messages carry user information, you
+can do following:
 
-If the software includes automated tests, detail how to run those tests.
+```
+export default (body: string) : User => {
+    const { name, email } : any = JSON.parse(body)
 
-## Known issues
+    return new User(name, email)
+}
+```
 
-Document any known significant shortcomings with the software.
+Should there be an exception thrown during the transform function,
+an error is emitted to error listeners and messages is left
+in queue.
 
-## Getting help
+It could be useful to transform the body into an object. You can use
+`any` type or, preferably, create an interface and export the interface.
 
-Instruct users how to get help with this software; this might include links to an issue tracker, wiki, mailing list, etc.
+```
+// Action.ts
+export interface Action {
+    name: string
+    source: number
+    target?: number
+}
 
-**Example**
+// transformer.ts
+export default (body: string) : Action {
+    const { name, source, target } : any = JSON.parse(body)
 
-If you have questions, concerns, bug reports, etc, please file an issue in this repository's Issue Tracker.
+    // Ensure you have appropriate max receive count option in your SQS
+    // if you want to throw errors in transformer as it does not delete
+    // messages that fail transformation.
+    if (name === undefined || source === undefined) {
+        throw new Error('Message body missing necessary parameters.')
+    }
 
-## Getting involved
+    return { name, source, target }
+}
 
-This section should detail why people should get involved and describe key areas you are
-currently focusing on; e.g., trying to get feedback on features, fixing certain bugs, building
-important pieces, etc.
+// main.ts
+// Your app would be initialized like so:
+const app: QueueConsumer<Action> = new QueueConsumer(sqs, config, transformer)
+```
 
-General instructions on _how_ to contribute should be stated with a link to [CONTRIBUTING](CONTRIBUTING.md).
+### Config
+The config this consumer requires extends `AWS.SQS.Types.ReceiveMessageRequest`
+interface. Documentation can be found [here](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#receiveMessage-property) in the
+**Parameters** section.
+You can find it also in the AWS Github repo [here](https://github.com/aws/aws-sdk-js/blob/master/apis/sqs-2012-11-05.normal.json) or [here](https://github.com/aws/aws-sdk-js/blob/master/clients/sqs.d.ts) (search for `ReceiveMessageRequest`).
 
+On top of these parameters, this library adds `Interval?: number`. This has to be set for continious polling.
+
+### Listeners
+There are two groups of listeners you can make use of: `QueueMessage`, `ConsumerException`. To add listeners to the app,
+you have to init new instance of the consumer and use following API:
+
+`app.onMessage.addListener(message => handler(message))`
+
+Where message is of type `QueueMessage` and has property `body` of type that you specified on
+init (for example mentioned above, it would `body: Action`).
+
+To listen to errors, you add a listener `(error: ConsumerException) => void`:
+
+`app.onError.addListener(error => handler(error))`
+
+There are 3 types of error reported, all of which `extends ConsumerException`:
+- from connecting to SQS, corresponds to `class ConnectionException`
+- transforming messages, corresponds to `class TransformerException`
+- handling messages, corresponds to `class ListenerException`
+
+On `class ConsumerException`, there is one public method: `unwrap () : Error`.
+This gives you an instance of `Error` that is responsible for the exception.
+
+### Example
+```
+/**
+ * Creates new sqs consumer with configuration that
+ * is just an extended AWS.SQS.Types.ReceiveMessageRequest object
+ * and tranform function that assigns type of T as message body.
+ *
+ * @var {QueueConsumer<T>}
+ */
+
+const app: QueueConsumer<T> = new QueueConsumer(
+  new AWS.SQS(),
+  config,
+  transform
+)
+
+/**
+ * Message handler of type
+ * (message: QueueMessage<T>) => void
+ */
+
+app.onMessage.addListener(m => flow(m))
+
+/**
+ * Error handlers of type
+ * (error: ConsumerException) => void
+ */
+
+app.onError
+  .addListener(console.log)
+  .addListener(e => publish(e))
+
+/**
+ * Starts the queue consumer.
+ */
+
+app.run()
+
+// or app.runOnce() for AWS Lambda services.
+
+/**
+ * Stops the polling.
+ */
+
+app.stop()
+```
+
+### QueueMessage
+`QueueMessage` has following methods and properties:
+
+- `body: T` is transformed message body
+- `receipt: string` is the SQS message receipt
+- `raw: AWS.SQS.Message` is the raw SQS message from the SDK package
+- `changeVisibility (secs: number) : Promise<AWS.Respose>` changes the message visibility
+- `delete () : Promise<AWS.Respose>` removes the message
+
+This library is trying to work with AWS SDK as closely as possible. To use it,
+you can often refer to the official documentation, as under the hood these methods often are just
+`return sqs.method(request).promise()`.
 
 ----
 
 ## Open source licensing info
-1. [TERMS](TERMS.md)
-2. [LICENSE](LICENSE)
-3. [CFPB Source Code Policy](https://github.com/cfpb/source-code-policy/)
+
+1. [LICENSE](LICENSE)
+2. [CFPB Source Code Policy](https://github.com/cfpb/source-code-policy/)
 
 
 ----
 
 ## Credits and references
 
-1. Projects that inspired you
-2. Related projects
-3. Books, papers, talks, or other sources that have meaningful impact or influence on this project
+This library is inpired by [bbc/sqs-consumer](https://github.com/bbc/sqs-consumer) project.
