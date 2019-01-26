@@ -102,7 +102,6 @@ export class QueueConsumer<T> {
    * @return {Promise<QueueMessage[]>}
    */
   private async poll () : Promise<Array<QueueMessage<T>>> {
-    console.log('sqs', this.sqs)
     const { Messages }: AWS.SQS.ReceiveMessageResult = await this.sqs
       .receiveMessage(this.request)
       .promise()
