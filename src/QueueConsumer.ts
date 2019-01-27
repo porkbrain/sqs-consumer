@@ -2,6 +2,12 @@ import * as AWS from 'aws-sdk'
 import { ListenerBag } from './ListenerBag'
 import { QueueMessage } from './QueueMessage'
 import { QueueConsumerConfig } from './QueueConsumerConfig'
+import {
+  ConsumerException,
+  ConnectionException,
+  TransformException,
+  ListenerException,
+} from './exceptions'
 
 export class QueueConsumer<T> {
 
@@ -15,9 +21,9 @@ export class QueueConsumer<T> {
   /**
    * Listener bag to publish errors to.
    *
-   * @var {ListenerBag<Error>}
+   * @var {ListenerBag<ConsumerException>}
    */
-  public onError: ListenerBag<Error> = new ListenerBag()
+  public onError: ListenerBag<ConsumerException> = new ListenerBag()
 
   /**
    * Interval id that polls the queue.
@@ -36,7 +42,7 @@ export class QueueConsumer<T> {
   constructor (
     private sqs: AWS.SQS,
     private request: QueueConsumerConfig,
-    private transformer: (body: string) => T
+    private transformer: (body: string) => T,
   ) {
     //
   }
@@ -45,7 +51,7 @@ export class QueueConsumer<T> {
    * Starts polling in interval.
    */
   public run () : void {
-    if (typeof this.request.Interval !== 'number') {
+    if (this.request.Interval === undefined) {
       throw new Error(`
         Polling interval missings. Specify it in the
         QueueConsumerConfig object using property Interval: number.
@@ -61,7 +67,14 @@ export class QueueConsumer<T> {
    */
   public runOnce () : void {
     this.poll()
-      .then(messages => messages.forEach(m => this.onMessage.dispatch(m)))
+      .then(messages => messages.forEach((message) => {
+        try {
+          this.onMessage.dispatch(message)
+        } catch (error) {
+          // If a listener fails, it should not affect the others.
+          this.onError.dispatch(new ListenerException(error))
+        }
+      }))
       .catch(e => this.onError.dispatch(e))
   }
 
@@ -88,10 +101,11 @@ export class QueueConsumer<T> {
    *
    * @return {Promise<QueueMessage[]>}
    */
-  private async poll () : Promise<QueueMessage<T>[]> {
-    const { Messages } = await this.sqs
+  private async poll () : Promise<Array<QueueMessage<T>>> {
+    const { Messages }: AWS.SQS.ReceiveMessageResult = await this.sqs
       .receiveMessage(this.request)
       .promise()
+      .catch(e => Promise.reject(new ConnectionException(e)))
 
     if (!Array.isArray(Messages)) {
       return []
@@ -106,7 +120,7 @@ export class QueueConsumer<T> {
 
         return new QueueMessage<T>(this.sqs, this.request.QueueUrl, body, raw)
       } catch (error) {
-        this.onError.dispatch(error)
+        this.onError.dispatch(new TransformException(error))
 
         return null
       }

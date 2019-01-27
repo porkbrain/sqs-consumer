@@ -1,15 +1,12 @@
-# Generic finles #
 ###################
 dist/
 node_modules/
 types/
 .env
-
-# Logs #
-######################
 *.log
+.nyc_output
+coverage
 
-# OS generated files #
 ######################
 .DS_Store
 .DS_Store?
