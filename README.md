@@ -1,12 +1,12 @@
 # AWS SQS Consumer
 
-**Description**:  Polls the Amazon Web Services Simple Queue Service and dispatches messages to the listeners.
-Messages handy functions, such as `delete` or `changeVisibility`, and the body is transformed by a transformer
+Polls the Amazon Web Services Simple Queue Service and dispatches messages to the listeners.
+Messages have handy functions, such as `delete` or `changeVisibility`, and the body is transformed by a transformer
 function.
 
 ## Dependencies
 
-This package was meant to be used along with Typescript. The only production dependency is the AWS NodeJS SDK. 
+This package was meant to be used along with Typescript. The only production dependency is the AWS SDK.
 
 ## Installation
 
@@ -14,51 +14,170 @@ This package was meant to be used along with Typescript. The only production dep
 
 ## Configuration
 
-If the software is configurable, describe it in detail, either here or in other documentation to which you link.
+Since this package is built on top of the AWS SDK, the correct access tokens and regions have to be
+set in the node enviroment variables.
+Please refer to [this guide](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/configuring-the-jssdk.html)
+for further instructions on how to configure the service.
+
+When constructing the `SQS` object for consumer, lock the version of the APIS:
+
+`const sqs: AWS.SQS = new AWS.SQS({ apiVersion: '2012-11-05' })`
+
+And set the correct region either in env variables or in your codebase:
+
+`AWS.config.update({ region: '...' })`
 
 ## Usage
 
-Show users how to use the software.
-Be specific.
-Use appropriate formatting when showing code snippets.
+### Transformer
+The consumer emits `QueueMessage` instances to listeners.
+Message body is transformed via provided transform function
+into a generic type `T`. For example, if your messages carry user information, you
+can do following:
 
-## How to test the software
+```typescript
+export default (body: string) : User => {
+    const { name, email } : any = JSON.parse(body)
 
-If the software includes automated tests, detail how to run those tests.
+    return new User(name, email)
+}
+```
 
-## Known issues
+Should there be an exception thrown during the transform function,
+an error is emitted to error listeners and messages is left
+in queue.
 
-Document any known significant shortcomings with the software.
+It could be useful to transform the body into an object. You can use
+`any` type or, preferably, create an interface and export it.
 
-## Getting help
+```typescript
+// Action.ts
+export interface Action {
+    name: string
+    source: number
+    target?: number
+}
 
-Instruct users how to get help with this software; this might include links to an issue tracker, wiki, mailing list, etc.
+// transformer.ts
+export default (body: string) : Action {
+    const { name, source, target } : any = JSON.parse(body)
 
-**Example**
+    // Ensure you have appropriate max receive count option in your SQS
+    // if you want to throw errors in transformer as it does not delete
+    // messages that fail transformation.
+    if (name === undefined || source === undefined) {
+        throw new Error('Message body missing necessary parameters.')
+    }
 
-If you have questions, concerns, bug reports, etc, please file an issue in this repository's Issue Tracker.
+    return { name, source, target }
+}
 
-## Getting involved
+// main.ts
+// Your app would be constructed like so:
+const app: QueueConsumer<Action> = new QueueConsumer(sqs, config, transformer)
+```
 
-This section should detail why people should get involved and describe key areas you are
-currently focusing on; e.g., trying to get feedback on features, fixing certain bugs, building
-important pieces, etc.
+### Config
+The config this consumer requires extends `AWS.SQS.Types.ReceiveMessageRequest`
+interface. Documentation can be found [here](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#receiveMessage-property) in the
+**Parameters** section.
+You can find it also in the AWS Github repo [here](https://github.com/aws/aws-sdk-js/blob/master/apis/sqs-2012-11-05.normal.json) or [here](https://github.com/aws/aws-sdk-js/blob/master/clients/sqs.d.ts) (search for `ReceiveMessageRequest`).
 
-General instructions on _how_ to contribute should be stated with a link to [CONTRIBUTING](CONTRIBUTING.md).
+On top of these parameters, this library adds `Interval?: number`. This has to be set for continuous polling.
 
+### Listeners
+There are two groups of listeners you can make use of: `QueueMessage`, `ConsumerException`. To add listeners to the app,
+you have to construct new instance of the consumer and use following API:
+
+#### Message
+`app.onMessage.addListener(message => handler(message))`
+
+Where `message: QueueMessage` has property `body` of type that you specified on
+construct (for example mentioned above, it would `body: Action`).
+
+#### Error
+To listen to errors, add a listener `(error: ConsumerException) => void`
+
+`app.onError.addListener(error => handler(error))`
+
+There are 3 types of error reported, all of which `extends ConsumerException`
+- error from connecting to SQS corresponds to `class ConnectionException`
+- error when transforming messages corresponds to `class TransformException`
+- error when handling messages corresponds to `class ListenerException`
+
+On `class ConsumerException`, there is one public method: `unwrap () : Error`.
+This gives you an instance of `Error` that is responsible for that particular exception.
+
+### Example
+Working with our `Action` interface example, we could bootstrap the app like so
+
+```typescript
+/**
+ * Creates new sqs consumer with configuration that
+ * is just an extended AWS.SQS.Types.ReceiveMessageRequest object
+ * and tranform function that assigns type of T as message body.
+ *
+ * @var {QueueConsumer<Action>}
+ */
+
+const app: QueueConsumer<Action> = new QueueConsumer(
+  new AWS.SQS(),
+  config,
+  transform
+)
+
+/**
+ * Message handler of type
+ * (message: QueueMessage<Action>) => void
+ */
+
+app.onMessage.addListener(m => flow(m))
+
+/**
+ * Error handlers of type
+ * (error: ConsumerException) => void
+ */
+
+app.onError
+  .addListener(console.log)
+  .addListener(e => publish(e))
+
+/**
+ * Starts the queue consumer.
+ */
+
+app.run()
+
+// or app.runOnce() for AWS Lambda services.
+
+/**
+ * Stops the polling.
+ */
+
+app.stop()
+```
+
+### QueueMessage
+`QueueMessage` has following methods and properties:
+
+- `body: T` is transformed message body
+- `receipt: string` is the SQS message receipt
+- `raw: AWS.SQS.Message` is the raw SQS message from the SDK package
+- `changeVisibility (secs: number) : Promise<AWS.Respose>` changes the message visibility
+- `delete () : Promise<AWS.Respose>` removes the message
+
+This library is trying to work with AWS SDK as closely as possible. To use it,
+you can often refer to the official documentation, as under the hood these methods often are just
+`return sqs.method(request).promise()`.
 
 ----
 
 ## Open source licensing info
-1. [TERMS](TERMS.md)
-2. [LICENSE](LICENSE)
-3. [CFPB Source Code Policy](https://github.com/cfpb/source-code-policy/)
 
+1. [LICENSE](LICENSE)
 
 ----
 
 ## Credits and references
 
-1. Projects that inspired you
-2. Related projects
-3. Books, papers, talks, or other sources that have meaningful impact or influence on this project
+This library is inpired by [bbc/sqs-consumer](https://github.com/bbc/sqs-consumer) project.

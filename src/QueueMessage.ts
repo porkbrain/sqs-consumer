@@ -11,7 +11,7 @@ export class QueueMessage<T> {
     return this.raw.ReceiptHandle
   }
 
-    /**
+  /**
    * @constructor
    *
    * @param {AWS.SQS} sqs
@@ -22,7 +22,7 @@ export class QueueMessage<T> {
     private sqs: AWS.SQS,
     private queue: string,
     public body: T,
-    public raw: AWS.SQS.Message
+    public raw: AWS.SQS.Message,
   ) {
     //
   }
