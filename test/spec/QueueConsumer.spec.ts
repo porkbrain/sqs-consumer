@@ -13,6 +13,7 @@ import {
 } from '../../src'
 
 describe('QueueConsumer', () => {
+
   const sqs: AWS.SQS = new AWS.SQS()
 
   const transform: (body: string) => string = body => body + 'ok'
