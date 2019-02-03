@@ -4,23 +4,20 @@ export class QueueMessage<T> {
 
   /**
    * Message receipt handle.
-   *
-   * @var {string}
    */
   public get receipt () : string {
     return this.raw.ReceiptHandle
   }
 
   /**
-   * @constructor
-   *
-   * @param {AWS.SQS} sqs
-   * @param {string} queue
-   * @param {any} content
+   * @param sqs Instance of the SQ service
+   * @param queue Queue URL
+   * @param body The transformed body of the message
+   * @param raw Raw SQS Message object for usecases beyond included methods.
    */
   constructor (
-    private sqs: AWS.SQS,
-    private queue: string,
+    protected sqs: AWS.SQS,
+    protected queue: string,
     public body: T,
     public raw: AWS.SQS.Message,
   ) {
@@ -30,8 +27,8 @@ export class QueueMessage<T> {
   /**
    * Changes visibility timeout of the message.
    *
-   * @param {number} secs
-   * @return {Promise<{ $response: Response<{}, AWS.AWSError>; }>}
+   * @param secs How many seconds should the message be delayed from being polled again
+   * @return Resolves with AWS response object
    */
   public changeVisibility (secs: number) : Promise<{ $response: Response<{}, AWS.AWSError>; }> {
     const request: AWS.SQS.Types.ChangeMessageVisibilityRequest = {
@@ -46,7 +43,7 @@ export class QueueMessage<T> {
   /**
    * Deletes the message from queue.
    *
-   * @return {Promise<{ $response: Response<{}, AWS.AWSError>; }>}
+   * @return Resolves with AWS response object
    */
   public delete () : Promise<{ $response: Response<{}, AWS.AWSError>; }> {
     const request: AWS.SQS.Types.DeleteMessageRequest = {

@@ -18,8 +18,10 @@ describe('QueueConsumer', () => {
   const transform: (body: string) => string = body => body + 'ok'
 
   const config: QueueConsumerConfig = {
-    QueueUrl: 'test-url',
-    Interval: 1000,
+    request: {
+      QueueUrl: 'test-url',
+    },
+    interval: 1000,
   }
 
   const app: QueueConsumer<string> = new QueueConsumer(sqs, config, transform)
@@ -35,17 +37,17 @@ describe('QueueConsumer', () => {
     ;(sqs.receiveMessage as sinon.SinonStub).restore()
   })
 
-  it('throws an error if Interval is not set on calling run', () => {
-    config.Interval = undefined
+  it('throws an error if interval is not set on calling run', () => {
+    config.interval = undefined
 
     expect(() => app.run()).to.throw(/QueueConsumerConfig/)
 
-    config.Interval = 1000
+    config.interval = 1000
   })
 
   it('transforms the messages and dispatches them', (done) => {
     ;(sqs.receiveMessage as sinon.SinonStub)
-      .withArgs(config)
+      .withArgs(config.request)
       .returns({
         promise: () => Promise.resolve({
           Messages: [
@@ -90,7 +92,7 @@ describe('QueueConsumer', () => {
 
     stub.returns(undefined)
 
-    config.Interval = 3
+    config.interval = 3
 
     app.run()
 
@@ -115,7 +117,7 @@ describe('QueueConsumer', () => {
 
   it('throws ConnectionException if SQS connection fails', (done) => {
     ;(sqs.receiveMessage as sinon.SinonStub)
-      .withArgs(config)
+      .withArgs(config.request)
       .returns({
         promise: () => Promise.reject(new Error('message'))
       })
@@ -138,7 +140,7 @@ describe('QueueConsumer', () => {
 
   it('throws ListenerException if a listener throws an error', (done) => {
     ;(sqs.receiveMessage as sinon.SinonStub)
-      .withArgs(config)
+      .withArgs(config.request)
       .returns({
         promise: () => Promise.resolve({
           Messages: [
@@ -167,7 +169,7 @@ describe('QueueConsumer', () => {
 
   it('throws TransformException if the transform function fails', (done) => {
     ;(sqs.receiveMessage as sinon.SinonStub)
-      .withArgs(config)
+      .withArgs(config.request)
       .returns({
         promise: () => Promise.resolve({
           Messages: [
@@ -202,7 +204,7 @@ describe('QueueConsumer', () => {
 
   it('handles empty queue as empty array', async () => {
     ;(sqs.receiveMessage as sinon.SinonStub)
-      .withArgs(config)
+      .withArgs(config.request)
       .returns({
         promise: () => Promise.resolve({})
       })

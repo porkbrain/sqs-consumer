@@ -1,8 +1,7 @@
 export class ConsumerException extends Error {
+
   /**
-   * @constructor
-   *
-   * @param {Error} caught The details of the error.
+   * @param caught The details of the error
    */
   constructor (private caught: Error) {
     super()
@@ -11,11 +10,12 @@ export class ConsumerException extends Error {
   /**
    * Returns the inner error.
    *
-   * @return {Error}
+   * @return Wrapped error
    */
   public unwrap () : Error {
     return this.caught
   }
+
 }
 
 export class ConnectionException extends ConsumerException {

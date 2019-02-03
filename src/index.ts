@@ -6,7 +6,7 @@ export { QueueConsumer } from './QueueConsumer'
 
 /**
  * Exports the queue configuration interface that
- * implements the AWS.SQS.Request.
+ * with the AWS.SQS.Request.
  */
 
 export { QueueConsumerConfig } from './QueueConsumerConfig'

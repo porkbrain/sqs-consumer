@@ -13,52 +13,46 @@ export class QueueConsumer<T> {
 
   /**
    * Listener bag to publish messages to.
-   *
-   * @var {ListenerBag<QueueMessage>}
    */
   public onMessage: ListenerBag<QueueMessage<T>> = new ListenerBag()
 
   /**
    * Listener bag to publish errors to.
-   *
-   * @var {ListenerBag<ConsumerException>}
    */
   public onError: ListenerBag<ConsumerException> = new ListenerBag()
 
   /**
    * Interval id that polls the queue.
-   *
-   * @var {NodeJS.Timeout}
    */
-  private runnable: NodeJS.Timeout
+  protected runnable: NodeJS.Timeout
 
   /**
-   * @constructor
-   *
-   * @param {AWS.SQS} sqs
-   * @param {QueueConsumerConfig} request
-   * @param {(body: string) => T} transformer Transforms the message content body.
+   * @param sqs Instance of the SQ service
+   * @param config Config with request
+   * @param transformer Transforms the message content body
    */
   constructor (
-    private sqs: AWS.SQS,
-    private request: QueueConsumerConfig,
-    private transformer: (body: string) => T,
+    protected sqs: AWS.SQS,
+    protected config: QueueConsumerConfig,
+    protected transformer: (body: string) => T,
   ) {
     //
   }
 
   /**
    * Starts polling in interval.
+   *
+   * @throws {Error}
    */
   public run () : void {
-    if (this.request.Interval === undefined) {
+    if (this.config.interval === undefined) {
       throw new Error(`
         Polling interval missings. Specify it in the
-        QueueConsumerConfig object using property Interval: number.
+        QueueConsumerConfig object using property interval: number.
       `)
     }
 
-    this.runnable = setInterval(() => this.runOnce(), this.request.Interval)
+    this.runnable = setInterval(() => this.runOnce(), this.config.interval)
   }
 
   /**
@@ -90,7 +84,7 @@ export class QueueConsumer<T> {
   /**
    * Whether the consumer is polling or not.
    *
-   * @return {boolean}
+   * @return Whether next run is scheduled
    */
   public isPolling () : boolean {
     return this.runnable !== undefined
@@ -99,11 +93,12 @@ export class QueueConsumer<T> {
   /**
    * Polls the sqs and emits appropriate events.
    *
-   * @return {Promise<QueueMessage[]>}
+   * @return Resolves with array of queue messages
+   * @throws {ConnectionException}
    */
-  private async poll () : Promise<Array<QueueMessage<T>>> {
+  protected async poll () : Promise<Array<QueueMessage<T>>> {
     const { Messages }: AWS.SQS.ReceiveMessageResult = await this.sqs
-      .receiveMessage(this.request)
+      .receiveMessage(this.config.request)
       .promise()
       .catch(e => Promise.reject(new ConnectionException(e)))
 
@@ -118,7 +113,7 @@ export class QueueConsumer<T> {
         // is dispatched.
         const body: T = this.transformer(raw.Body)
 
-        return new QueueMessage<T>(this.sqs, this.request.QueueUrl, body, raw)
+        return new QueueMessage<T>(this.sqs, this.config.request.QueueUrl, body, raw)
       } catch (error) {
         this.onError.dispatch(new TransformException(error))
 
@@ -126,4 +121,5 @@ export class QueueConsumer<T> {
       }
     }).filter(Boolean)
   }
+
 }
