@@ -4,6 +4,7 @@ import * as sinon from 'sinon'
 import { QueueMessage } from '../../src'
 
 describe('QueueMessage', () => {
+
   const sqs: any = {
     changeMessageVisibility: sinon.stub(),
     deleteMessage: sinon.stub(),

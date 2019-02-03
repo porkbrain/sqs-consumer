@@ -1,10 +1,15 @@
 import * as AWS from 'aws-sdk'
 
-export interface QueueConsumerConfig extends AWS.SQS.Types.ReceiveMessageRequest {
+export interface QueueConsumerConfig {
+
   /**
    * The interval of SQS polling.
-   *
-   * @var {number}
    */
-  Interval?: number
+  interval?: number
+
+  /**
+   * AWS request that is sent to retrieve messages.
+   */
+  request: AWS.SQS.Types.ReceiveMessageRequest
+
 }
