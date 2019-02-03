@@ -78,12 +78,13 @@ const app: QueueConsumer<Action> = new QueueConsumer(sqs, config, transformer)
 ```
 
 ### Config
-The config this consumer requires extends `AWS.SQS.Types.ReceiveMessageRequest`
-interface. Documentation can be found [here](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#receiveMessage-property) in the
+The config this consumer requires has property `request` of type
+`AWS.SQS.Types.ReceiveMessageRequest`.
+Documentation can be found [here](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#receiveMessage-property) in the
 **Parameters** section.
 You can find it also in the AWS Github repo [here](https://github.com/aws/aws-sdk-js/blob/master/apis/sqs-2012-11-05.normal.json) or [here](https://github.com/aws/aws-sdk-js/blob/master/clients/sqs.d.ts) (search for `ReceiveMessageRequest`).
 
-On top of these parameters, this library adds `Interval?: number`. This has to be set for continuous polling.
+Along with this parameter, this library adds `interval?: number`. This has to be set for continuous polling.
 
 ### Listeners
 There are two groups of listeners you can make use of: `QueueMessage`, `ConsumerException`. To add listeners to the app,
