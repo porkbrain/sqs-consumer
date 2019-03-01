@@ -13,7 +13,7 @@
     "name": "Michael Bausano",
     "email": "bausanomichal@gmail.com"
   },
-  "license": "ISC",
+  "license": "MIT",
   "repository": "github:bausano/sqs-consumer",
   "keywords": [
     "aws",
