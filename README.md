@@ -171,6 +171,48 @@ This library is trying to work with AWS SDK as closely as possible. To use it,
 you can often refer to the official documentation, as under the hood these methods often are just
 `return sqs.method(request).promise()`.
 
+### QueueListener
+
+The package also provides a TypeScript decorator for class methods. Methods
+annotated with `@QueueListener` will automatically be trigerred upon receiving
+a message from SQS.
+
+The signature is as follows
+
+```typescript
+@QueueListener<T> (
+  // A consumer instance, queue consumer config or a queue URL.
+  consumerConfig: QueueConsumer<T> | QueueConsumerConfig | string,
+  // Custom transformation function, defaults to JSON.parse.
+  transform: (body: string) => T = JSON.parse,
+  // Message deletion policy. Provides NEVER, ALWAYS and ON_SUCCESS and defaults
+  // to the latter.
+  deletionPolicy: DeletionPolicy = DeletionPolicy.ON_SUCCESS,
+)
+```
+
+#### Example
+
+```typescript
+interface Todo {
+  title: string
+  completed: boolean
+}
+
+class Controller {
+
+  @QueueListener<Todo>('http://my-queue-url')
+  public handleMessage (message: QueueMessage<Todo>, app: QueueConsumer<Todo>) : void {
+    console.assert(typeof message.body.title === 'string')
+    console.assert(typeof message.body.titcompletedle === 'boolean')
+
+    // Also provides the consumer instance to stop polling.
+    console.assert(typeof app.stop === 'function')
+  }
+
+}
+```
+
 ----
 
 ## Open source licensing info
