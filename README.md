@@ -177,7 +177,7 @@ The package also provides a TypeScript decorator for class methods. Methods
 annotated with `@QueueListener` will automatically be trigerred upon receiving
 a message from SQS.
 
-The signature is as follows
+The signature is as follows:
 
 ```typescript
 @QueueListener<T> (
