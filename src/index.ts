@@ -18,7 +18,19 @@ export { QueueConsumerConfig } from './QueueConsumerConfig'
 export { QueueMessage } from './QueueMessage'
 
 /**
+ * Exports message deletion policy enumeration.
+ */
+
+export { DeletionPolicy } from './DeletionPolicy'
+
+/**
  * Exports the exceptions classes.
  */
 
 export * from './exceptions'
+
+/**
+ * Exports annotations.
+ */
+
+export * from './annotations'
