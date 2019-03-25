@@ -1,5 +1,6 @@
 import { SQS } from 'aws-sdk'
 import { QueueConsumer } from './QueueConsumer'
+import { ListenerException } from './exceptions'
 import { DeletionPolicy } from './DeletionPolicy'
 import { QueueConsumerConfig } from './QueueConsumerConfig'
 
@@ -40,6 +41,8 @@ export function QueueListener<T> (
         if (deletionPolicy === DeletionPolicy.ON_SUCCESS) {
           message.delete()
         }
+      } catch (e) {
+        app.onError.dispatch(new ListenerException(e))
       } finally {
         // If the deletion policy is to delete on always, delete the message.
         if (deletionPolicy === DeletionPolicy.ALWAYS) {
