@@ -5,7 +5,9 @@ import { QueueConsumerConfig } from './QueueConsumerConfig'
 
 /**
  * The @Listener method annotation to create a listener for AWS SQS messages.
- * This method is then automatically trigerred upon receiving a message.
+ * This method is then automatically trigerred upon receiving a message. If not
+ * provided in the configuration, the default interval between polling the queue
+ * is 1 second (1000ms).
  *
  * @param consumerConfig The consumer configuration, the queue URL or the consumer itself
  * @param transform The message transformer
@@ -17,9 +19,9 @@ export function QueueListener<T> (
   deletionPolicy: DeletionPolicy = DeletionPolicy.ON_SUCCESS,
 ) : MethodDecorator {
   return (target, key) => {
-    // Merge the configuration to one type.
     let app: QueueConsumer<T>
 
+    // Merge the configuration to one type.
     if (consumerConfig instanceof QueueConsumer) {
       app = consumerConfig
     } else {
@@ -34,18 +36,15 @@ export function QueueListener<T> (
       try {
         await target[key](message, app)
 
-        // If the deletion policy is to delete on success or always, delete the
-        // message.
-        if (deletionPolicy === DeletionPolicy.ON_SUCCESS || deletionPolicy === DeletionPolicy.ALWAYS) {
+        // If the deletion policy is to delete on success, delete the message.
+        if (deletionPolicy === DeletionPolicy.ON_SUCCESS) {
           message.delete()
         }
-      } catch (e) {
-        // If the deletion policy is to delete always, delete the message.
+      } finally {
+        // If the deletion policy is to delete on always, delete the message.
         if (deletionPolicy === DeletionPolicy.ALWAYS) {
           message.delete()
         }
-
-        throw e
       }
     })
 

@@ -204,7 +204,7 @@ class Controller {
   @QueueListener<Todo>('http://my-queue-url')
   public handleMessage (message: QueueMessage<Todo>, app: QueueConsumer<Todo>) : void {
     console.assert(typeof message.body.title === 'string')
-    console.assert(typeof message.body.titcompletedle === 'boolean')
+    console.assert(typeof message.body.completed === 'boolean')
 
     // Also provides the consumer instance to stop polling.
     console.assert(typeof app.stop === 'function')
