@@ -1,6 +1,6 @@
 {
   "name": "@bausano/sqs-consumer",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "Polls AWS Simple Queue Service and dispatches the messages to listeners.",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
